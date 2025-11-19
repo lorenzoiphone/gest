@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Integrato Gestione Macchinisti e Riserve</title>
+    <style>
+        :root {
+            --vt-blue: #0055a4;
+            --vt-light-blue: #0078d7;
+            --vt-red: #e4002b;
+            --vt-green: #00a650;
+            --vt-orange: #ff6b00;
+            --vt-gray: #f5f5f5;
+            --vt-dark-gray: #666666;
+            --vt-gold: #ffd700;
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --info: #17a2b8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--vt-blue) 0%, var(--vt-light-blue) 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .vt-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            min-height: calc(100vh - 20px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.4);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        /* Header ViaggiaTreno */
+        .vt-header {
+            background: var(--vt-blue);
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--vt-red);
+        }
+        
+        .vt-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 26px;
+            font-weight: bold;
+        }
+        
+        .vt-logo-icon {
+            background: var(--vt-red);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 22px;
+        }
+        
+        .vt-user-area {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .live-indicator {
+            background: var(--vt-red);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        /* Navigation ViaggiaTreno */
+        .vt-nav {
+            background: var(--vt-light-blue);
+            padding: 0 25px;
+            overflow-x: auto;
+        }
+        
+        .vt-nav-menu {
+            display: flex;
+            list-style: none;
+            min-width: max-content;
+        }
+        
+        .vt-nav-item {
+            padding: 16px 24px;
+            color: white;
+            cursor: pointer;
+            border-bottom: 4px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+        
+        .vt-nav-item.active {
+            background: rgba(255,255,255,0.15);
+            border-bottom-color: var(--vt-gold);
+        }
+        
+        .vt-nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        /* Main Content */
+        .vt-main {
+            padding: 25px;
+            background: var(--vt-gray);
+            min-height: calc(100vh - 160px);
+        }
+        
+        .vt-view {
+            display: none;
+        }
+        
+        .vt-view.active {
+            display: block;
+        }
+        
+        /* Dashboard Macchinisti */
+        .vt-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .vt-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .vt-stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--vt-blue);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .vt-stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .vt-stat-card.warning { border-left-color: var(--vt-orange); }
+        .vt-stat-card.danger { border-left-color: var(--vt-red); }
+        .vt-stat-card.success { border-left-color: var(--vt-green); }
+        .vt-stat-card.gold { border-left-color: var(--vt-gold); }
+        
+        .vt-stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--vt-blue);
+            margin-bottom: 8px;
+        }
+        
+        .vt-stat-label {
+            font-size: 14px;
+            color: var(--vt-dark-gray);
+            font-weight: 600;
+        }
+        
+        /* Drivers Grid */
+        .vt-drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .vt-driver-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid #e0e0e0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .vt-driver-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--vt-blue);
+        }
+        
+        .vt-driver-card.active {
+            border-color: var(--vt-green);
+            background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+        }
+        
+        .vt-driver-card.active::before {
+            background: var(--vt-green);
+        }
+        
+        .vt-driver-card.resting {
+            border-color: var(--vt-orange);
+            background: linear-gradient(135deg, #fffbf0 0%, #fef5e7 100%);
+        }
+        
+        .vt-driver-card.resting::before {
+            background: var(--vt-orange);
+        }
+        
+        .vt-driver-card.unavailable {
+            border-color: var(--vt-red);
+            background: linear-gradient(135deg, #fff8f8 0%, #f5e8e8 100%);
+        }
+        
+        .vt-driver-card.unavailable::before {
+            background: var(--vt-red);
+        }
+        
+        .vt-driver-card.available {
+            border-color: var(--vt-gold);
+            background: linear-gradient(135deg, #fffef0 0%, #fefbe7 100%);
+        }
+        
+        .vt-driver-card.available::before {
+            background: var(--vt-gold);
+        }
+        
+        .vt-driver-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        
+        .vt-driver-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .vt-driver-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--vt-blue);
+        }
+        
+        .vt-driver-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .vt-badge-active { background: var(--vt-green); }
+        .vt-badge-resting { background: var(--vt-orange); }
+        .vt-badge-unavailable { background: var(--vt-red); }
+        .vt-badge-available { background: var(--vt-gold); color: #333; }
+        
+        .vt-driver-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .vt-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .vt-info-label {
+            font-size: 12px;
+            color: var(--vt-dark-gray);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .vt-info-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--vt-dark-gray);
+        }
+        
+        .vt-driver-train {
+            background: var(--vt-gray);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--vt-blue);
+        }
+        
+        .vt-train-number {
+            font-weight: bold;
+            color: var(--vt-blue);
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .vt-train-route {
+            font-size: 13px;
+            color: var(--vt-dark-gray);
+        }
+        
+        .vt-driver-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .vt-button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            justify-content: center;
+        }
+        
+        .vt-button.primary {
+            background: var(--vt-blue);
+            color: white;
+        }
+        
+        .vt-button.success {
+            background: var(--vt-green);
+            color: white;
+        }
+        
+        .vt-button.warning {
+            background: var(--vt-orange);
+            color: white;
+        }
+        
+        .vt-button.danger {
+            background: var(--vt-red);
+            color: white;
+        }
+        
+        .vt-button.gold {
+            background: var(--vt-gold);
+            color: #333;
+        }
+        
+        .vt-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .vt-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Right Panel */
+        .vt-right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .vt-panel-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+        
+        .vt-panel-title {
+            color: var(--vt-blue);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+        
+        /* Quick Actions */
+        .vt-actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .vt-action-card {
+            background: var(--vt-gray);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .vt-action-card:hover {
+            border-color: var(--vt-blue);
+            transform: translateY(-3px);
+            background: white;
+        }
+        
+        .vt-action-icon {
+            font-size: 28px;
+            color: var(--vt-blue);
+            margin-bottom: 10px;
+        }
+        
+        .vt-action-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--vt-dark-gray);
+        }
+        
+        /* Alerts */
+        .vt-alert-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .vt-alert-item {
+            padding: 15px;
+            border-left: 5px solid var(--vt-orange);
+            background: #fffaf0;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .vt-alert-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .vt-alert-item.critical {
+            border-left-color: var(--vt-red);
+            background: #fff0f0;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .vt-alert-item.info {
+            border-left-color: var(--vt-blue);
+            background: #f0f8ff;
+        }
+        
+        .vt-alert-item.success {
+            border-left-color: var(--vt-green);
+            background: #f8fff8;
+        }
+        
+        /* Search Section */
+        .vt-search-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+        
+        .vt-search-title {
+            color: var(--vt-blue);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .vt-search-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .vt-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .vt-label {
+            font-weight: 600;
+            color: var(--vt-dark-gray);
+            font-size: 13px;
+        }
+        
+        .vt-input, .vt-select {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .vt-input:focus, .vt-select:focus {
+            outline: none;
+            border-color: var(--vt-blue);
+            box-shadow: 0 0 0 3px rgba(0,85,164,0.1);
+        }
+        
+        /* Train Type Selection */
+        .vt-train-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .vt-train-type-btn {
+            padding: 12px 20px;
+            border: 2px solid var(--vt-blue);
+            border-radius: 8px;
+            background: white;
+            color: var(--vt-blue);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .vt-train-type-btn.active {
+            background: var(--vt-blue);
+            color: white;
+        }
+        
+        .vt-train-type-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .vt-train-type-btn.fr { border-color: #e4002b; color: #e4002b; }
+        .vt-train-type-btn.fr.active { background: #e4002b; color: white; }
+        
+        .vt-train-type-btn.ic { border-color: #00a650; color: #00a650; }
+        .vt-train-type-btn.ic.active { background: #00a650; color: white; }
+        
+        .vt-train-type-btn.reg { border-color: #0055a4; color: #0055a4; }
+        .vt-train-type-btn.reg.active { background: #0055a4; color: white; }
+        
+        /* Reserves Table */
+        .reserves-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        th {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .location-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .badge-an { background-color: #3498db; }
+        .badge-ba { background-color: #9b59b6; }
+        .badge-bo { background-color: #e74c3c; }
+        .badge-fg { background-color: #f39c12; }
+        .badge-mi { background-color: #1abc9c; }
+        .badge-na { background-color: #34495e; }
+        .badge-pl { background-color: #d35400; }
+        .badge-rm { background-color: #c0392b; }
+        .badge-to { background-color: #16a085; }
+        .badge-ve { background-color: #8e44ad; }
+        .badge-rc { background-color: #27ae60; }
+        
+        .train-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            background-color: #e0e0e0;
+            color: #555;
+        }
+        
+        .rest-yes {
+            color: var(--success);
+            font-weight: bold;
+        }
+        
+        .rest-no {
+            color: var(--danger);
+            font-weight: bold;
+        }
+        
+        .time-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        /* Delay Management */
+        .delay-management {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+        
+        .delay-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .solutions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .solution-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--vt-blue);
+            transition: all 0.3s ease;
+        }
+        
+        .solution-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .solution-card.recommended {
+            border-left-color: var(--vt-green);
+            background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+        }
+        
+        .solution-card.warning {
+            border-left-color: var(--vt-orange);
+            background: linear-gradient(135deg, #fffaf0 0%, #fef5e7 100%);
+        }
+        
+        .solution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .solution-title {
+            font-weight: 600;
+            color: var(--vt-blue);
+        }
+        
+        .solution-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .badge-recommended { background: var(--vt-green); }
+        .badge-alternative { background: var(--vt-orange); }
+        
+        .solution-details {
+            font-size: 0.9rem;
+            color: var(--vt-dark-gray);
+            margin-bottom: 15px;
+        }
+        
+        .solution-impact {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        /* Modal */
+        .vt-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .vt-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .vt-modal-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            animation: scaleIn 0.3s ease forwards;
+        }
+        
+        @keyframes scaleIn {
+            to { transform: scale(1); }
+        }
+        
+        .vt-modal-header {
+            background: var(--vt-blue);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .vt-modal-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .vt-modal-body {
+            padding: 30px;
+        }
+        
+        .vt-modal-footer {
+            padding: 20px 30px;
+            border-top: 2px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+        
+        /* Notification */
+        .vt-notification {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            padding: 18px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            min-width: 300px;
+            max-width: 500px;
+            word-wrap: break-word;
+        }
+        
+        .vt-notification.show {
+            transform: translateX(0);
+        }
+        
+        .vt-notification.success { background: var(--vt-green); }
+        .vt-notification.error { background: var(--vt-red); }
+        .vt-notification.warning { background: var(--vt-orange); }
+        .vt-notification.info { background: var(--vt-blue); }
+        
+        /* Progress Bar */
+        .vt-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .vt-progress-fill {
+            height: 100%;
+            background: var(--vt-green);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .vt-progress-fill.warning {
+            background: var(--vt-orange);
+        }
+        
+        .vt-progress-fill.danger {
+            background: var(--vt-red);
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        select, input, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 1200px) {
+            .vt-dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .vt-drivers-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-search-form, .delay-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-nav-menu {
+                flex-wrap: wrap;
+            }
+            
+            .solutions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .vt-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .vt-stats-grid, .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-driver-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-driver-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-actions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .vt-modal-content {
+                width: 98%;
+                margin: 10px;
+            }
+            
+            .vt-notification {
+                min-width: 250px;
+                max-width: 90%;
+                right: 5%;
+            }
+            
+            .vt-train-type-selector {
+                justify-content: center;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                flex-wrap: wrap;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .vt-main {
+                padding: 15px;
+            }
+            
+            .vt-panel-section, .vt-search-section, .delay-management {
+                padding: 15px;
+            }
+            
+            .vt-driver-card {
+                padding: 15px;
+            }
+            
+            .vt-stat-card, .stat-card {
+                padding: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="vt-container">
+        <!-- Header ViaggiaTreno -->
+        <header class="vt-header">
+            <div class="vt-logo">
+                <div class="vt-logo-icon">
+                    <i class="fas fa-train"></i>
+                </div>
+                Sistema Integrato Gestione Macchinisti e Riserve
+            </div>
+            <div class="vt-user-area">
+                <div class="live-indicator">
+                    <i class="fas fa-circle"></i>
+                    LIVE - SISTEMA ATTIVO
+                </div>
+                <div id="currentTime">00:00:00</div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="vt-nav">
+            <ul class="vt-nav-menu">
+                <li class="vt-nav-item active" onclick="IntegratedSystem.switchView('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard Live
+                </li>
+                <li class="vt-nav-item" onclick="IntegratedSystem.switchView('cambio-macchinisti')">
+                    <i class="fas fa-exchange-alt"></i>
+                    Cambio Macchinisti
+                </li>
+                <li class="vt-nav-item" onclick="IntegratedSystem.switchView('riserve')">
+                    <i class="fas fa-users"></i>
+                    Gestione Riserve
+                </li>
+                <li class="vt-nav-item" onclick="IntegratedSystem.switchView('ritardi')">
+                    <i class="fas fa-clock"></i>
+                    Gestione Ritardi
+                </li>
+                <li class="vt-nav-item" onclick="IntegratedSystem.switchView('report')">
+                    <i class="fas fa-chart-bar"></i>
+                    Report Live
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="vt-main">
+            <!-- Dashboard View -->
+            <div id="dashboard" class="vt-view active">
+                <div class="vt-search-section">
+                    <h2 class="vt-search-title">
+                        <i class="fas fa-search"></i>
+                        Ricerca Treno per Assegnazione Immediate
+                    </h2>
+                    
+                    <!-- Train Type Selector -->
+                    <div class="vt-train-type-selector">
+                        <div class="vt-train-type-btn fr active" onclick="IntegratedSystem.selectTrainType('all')">
+                            <i class="fas fa-train"></i>
+                            Tutti i Treni
+                        </div>
+                        <div class="vt-train-type-btn fr" onclick="IntegratedSystem.selectTrainType('fr')">
+                            <i class="fas fa-bolt"></i>
+                            Frecciarossa
+                        </div>
+                        <div class="vt-train-type-btn ic" onclick="IntegratedSystem.selectTrainType('ic')">
+                            <i class="fas fa-train"></i>
+                            Intercity
+                        </div>
+                        <div class="vt-train-type-btn reg" onclick="IntegratedSystem.selectTrainType('reg')">
+                            <i class="fas fa-subway"></i>
+                            Regionale
+                        </div>
+                    </div>
+                    
+                    <div class="vt-search-form">
+                        <div class="vt-form-group">
+                            <label class="vt-label">Numero Treno</label>
+                            <input type="text" class="vt-input" id="trainNumber" placeholder="Es: 9512" value="9512">
+                        </div>
+                        <div class="vt-form-group">
+                            <label class="vt-label">Data Corsa</label>
+                            <input type="date" class="vt-input" id="trainDate">
+                        </div>
+                        <button class="vt-button primary" onclick="IntegratedSystem.searchTrain()">
+                            <i class="fas fa-search"></i>
+                            Cerca Treno
+                        </button>
+                    </div>
+                </div>
+
+                <div class="vt-dashboard">
+                    <div>
+                        <!-- Statistics -->
+                        <div class="vt-stats-grid">
+                            <div class="vt-stat-card" onclick="IntegratedSystem.showAllDrivers()">
+                                <div class="vt-stat-value" id="totalDrivers">24</div>
+                                <div class="vt-stat-label">MACCHINISTI TOTALI</div>
+                            </div>
+                            <div class="vt-stat-card success" onclick="IntegratedSystem.filterByStatus('active')">
+                                <div class="vt-stat-value" id="activeDrivers">18</div>
+                                <div class="vt-stat-label">IN SERVIZIO</div>
+                            </div>
+                            <div class="vt-stat-card gold" onclick="IntegratedSystem.filterByStatus('available')">
+                                <div class="vt-stat-value" id="availableDrivers">6</div>
+                                <div class="vt-stat-label">DISPONIBILI</div>
+                            </div>
+                            <div class="vt-stat-card warning" onclick="IntegratedSystem.filterByStatus('resting')">
+                                <div class="vt-stat-value" id="restingDrivers">3</div>
+                                <div class="vt-stat-label">IN PAUSA</div>
+                            </div>
+                        </div>
+
+                        <!-- Drivers Grid -->
+                        <div class="vt-drivers-grid" id="driversGrid">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Right Panel -->
+                    <div class="vt-right-panel">
+                        <!-- Quick Actions -->
+                        <div class="vt-panel-section">
+                            <h3 class="vt-panel-title">
+                                <i class="fas fa-bolt"></i>
+                                Azioni Immediate
+                            </h3>
+                            <div class="vt-actions-grid">
+                                <div class="vt-action-card" onclick="IntegratedSystem.autoAssignAll()">
+                                    <div class="vt-action-icon">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div class="vt-action-label">Assegnazione Automatica</div>
+                                </div>
+                                <div class="vt-action-card" onclick="IntegratedSystem.showShiftModal()">
+                                    <div class="vt-action-icon">
+                                        <i class="fas fa-user-clock"></i>
+                                    </div>
+                                    <div class="vt-action-label">Nuovo Turno</div>
+                                </div>
+                                <div class="vt-action-card" onclick="IntegratedSystem.switchDrivers()">
+                                    <div class="vt-action-icon">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </div>
+                                    <div class="vt-action-label">Cambio Macchinisti</div>
+                                </div>
+                                <div class="vt-action-card" onclick="IntegratedSystem.emergencyProtocol()">
+                                    <div class="vt-action-icon">
+                                        <i class="fas fa-first-aid"></i>
+                                    </div>
+                                    <div class="vt-action-label">Protocollo Emergenza</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alerts Live -->
+                        <div class="vt-panel-section">
+                            <h3 class="vt-panel-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Allerta Live
+                            </h3>
+                            <div class="vt-alert-list" id="alertsList">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Next Trains -->
+                        <div class="vt-panel-section">
+                            <h3 class="vt-panel-title">
+                                <i class="fas fa-train"></i>
+                                Prossime Partenze
+                            </h3>
+                            <div id="nextTrains">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cambio Macchinisti View -->
+            <div id="cambio-macchinisti" class="vt-view">
+                <div class="vt-search-section">
+                    <h2 class="vt-search-title">
+                        <i class="fas fa-exchange-alt"></i>
+                        Sistema di Cambio Macchinisti
+                    </h2>
+                    <div class="vt-drivers-grid" id="switchDriversGrid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestione Riserve View -->
+            <div id="riserve" class="vt-view">
+                <div class="vt-search-section">
+                    <h2 class="vt-search-title">
+                        <i class="fas fa-users"></i>
+                        Gestione Riserve Personale
+                    </h2>
+                    
+                    <div class="controls">
+                        <div class="filter-group">
+                            <label for="location-filter">Filtra per sede:</label>
+                            <select id="location-filter">
+                                <option value="all">Tutte le sedi</option>
+                                <option value="AN">Ancona</option>
+                                <option value="BA">Bari</option>
+                                <option value="BO">Bologna</option>
+                                <option value="FG">Firenze</option>
+                                <option value="MI">Milano</option>
+                                <option value="NA">Napoli</option>
+                                <option value="PL">Paola</option>
+                                <option value="RM">Roma</option>
+                                <option value="TO">Torino</option>
+                                <option value="VE">Venezia</option>
+                                <option value="RC">Reggio Calabria</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="train-filter">Filtra per tipo treno:</label>
+                            <select id="train-filter">
+                                <option value="all">Tutti i tipi</option>
+                                <option value="ETR500">ETR500</option>
+                                <option value="ETR700">ETR700</option>
+                                <option value="ETR1000">ETR1000</option>
+                                <option value="G2000">G2000</option>
+                                <option value="D445">D445</option>
+                                <option value="Supporto">Supporto</option>
+                                <option value="Gestionale">Gestionale</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="time-filter">Filtra per orario:</label>
+                            <select id="time-filter">
+                                <option value="all">Tutti gli orari</option>
+                                <option value="morning">Mattina (05:00-12:00)</option>
+                                <option value="afternoon">Pomeriggio (12:00-18:00)</option>
+                                <option value="evening">Sera (18:00-24:00)</option>
+                                <option value="night">Notte (00:00-05:00)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="rest-filter">Filtra per riposo:</label>
+                            <select id="rest-filter">
+                                <option value="all">Tutti</option>
+                                <option value="Si">Con riposo</option>
+                                <option value="No">Senza riposo</option>
+                            </select>
+                        </div>
+                        
+                        <button id="reset-filters"><i class="fas fa-undo"></i> Reset Filtri</button>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-reserves">0</div>
+                            <div class="stat-label">Riserve Totali</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="active-now">0</div>
+                            <div class="stat-label">Attive Ora</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="with-rest">0</div>
+                            <div class="stat-label">Con Riposo</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="locations-count">0</div>
+                            <div class="stat-label">Sedi Attive</div>
+                        </div>
+                    </div>
+                    
+                    <div class="reserves-table">
+                        <table id="reserves-table">
+                            <thead>
+                                <tr>
+                                    <th>Sede</th>
+                                    <th>Codice Servizio</th>
+                                    <th>Orario Inizio</th>
+                                    <th>Orario Fine</th>
+                                    <th>Tipo Treno</th>
+                                    <th>Riposo</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reserves-body">
+                                <!-- I dati verranno inseriti qui tramite JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestione Ritardi View -->
+            <div id="ritardi" class="vt-view">
+                <div class="delay-management">
+                    <h2 class="vt-search-title">
+                        <i class="fas fa-clock"></i>
+                        Gestione Ritardi - Soluzioni Alternative
+                    </h2>
+                    
+                    <div class="delay-form">
+                        <div class="vt-form-group">
+                            <label class="vt-label">Treno con Ritardo</label>
+                            <select class="vt-select" id="delayedTrain">
+                                <option value="">Seleziona treno...</option>
+                            </select>
+                        </div>
+                        <div class="vt-form-group">
+                            <label class="vt-label">Minuti di Ritardo</label>
+                            <input type="number" class="vt-input" id="delayMinutes" placeholder="Minuti" min="1" max="180">
+                        </div>
+                        <div class="vt-form-group">
+                            <label class="vt-label">Stazione Attuale</label>
+                            <select class="vt-select" id="currentStation">
+                                <option value="Roma Termini">Roma Termini</option>
+                                <option value="Milano Centrale">Milano Centrale</option>
+                                <option value="Napoli Centrale">Napoli Centrale</option>
+                                <option value="Firenze SMN">Firenze SMN</option>
+                                <option value="Bologna Centrale">Bologna Centrale</option>
+                                <option value="Torino PN">Torino PN</option>
+                                <option value="Venezia Mestre">Venezia Mestre</option>
+                            </select>
+                        </div>
+                        <button class="vt-button primary" onclick="IntegratedSystem.findSolutions()">
+                            <i class="fas fa-search"></i>
+                            Trova Soluzioni
+                        </button>
+                    </div>
+                    
+                    <div class="solutions-grid" id="solutionsGrid">
+                        <!-- Le soluzioni verranno inserite qui tramite JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Live View -->
+            <div id="report" class="vt-view">
+                <div class="vt-search-section">
+                    <h2 class="vt-search-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Report Live Sistema
+                    </h2>
+                    <div class="vt-drivers-grid" id="reportGrid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification System -->
+    <div id="vtNotification" class="vt-notification"></div>
+
+    <script>
+        // Sistema Integrato Gestione Macchinisti e Riserve
+        class IntegratedSystem {
+            static drivers = [];
+            static trains = [];
+            static reserves = [];
+            static currentView = 'dashboard';
+            static autoRefreshInterval = null;
+            static filteredDrivers = [];
+            static selectedTrainType = 'all';
+            static filteredTrains = [];
+
+            static initialize() {
+                this.loadSampleData();
+                this.startAutoRefresh();
+                this.updateCurrentTime();
+                setInterval(() => this.updateCurrentTime(), 1000);
+                
+                // Set today's date as default
+                const today = new Date();
+                document.getElementById('trainDate').value = today.toISOString().split('T')[0];
+                
+                this.showNotification('Sistema integrato attivato e operativo', 'success', 3000);
+            }
+
+            static loadSampleData() {
+                // Sample drivers data
+                this.drivers = [
+                    {
+                        id: 'D001', name: 'Marco Rossi', badge: 'MR8452', status: 'active',
+                        currentTrain: 'FR 9512', route: 'Roma Termini - Milano Centrale',
+                        hoursWorked: 6.5, maxHours: 9, location: 'Roma Termini',
+                        nextBreak: '14:30', qualifications: ['Frecciarossa', 'Intercity', 'Regionale'],
+                        efficiency: 95, yearsService: 8
+                    },
+                    {
+                        id: 'D002', name: 'Anna Bianchi', badge: 'AB7231', status: 'active',
+                        currentTrain: 'IC 567', route: 'Napoli Centrale - Torino PN',
+                        hoursWorked: 4.2, maxHours: 9, location: 'Firenze SMN',
+                        nextBreak: '16:45', qualifications: ['Frecciarossa', 'Intercity'],
+                        efficiency: 92, yearsService: 5
+                    },
+                    {
+                        id: 'D003', name: 'Luigi Verdi', badge: 'LV6345', status: 'resting',
+                        currentTrain: null, route: null, hoursWorked: 8.7, maxHours: 9,
+                        location: 'Deposito Milano', nextBreak: '15:00',
+                        qualifications: ['Frecciarossa', 'Intercity', 'Mercantile'],
+                        efficiency: 88, yearsService: 12
+                    },
+                    {
+                        id: 'D004', name: 'Giulia Neri', badge: 'GN5123', status: 'available',
+                        currentTrain: null, route: null, hoursWorked: 2.1, maxHours: 9,
+                        location: 'Stazione Bologna', nextBreak: 'Disponibile',
+                        qualifications: ['Regionale', 'Intercity'],
+                        efficiency: 96, yearsService: 3
+                    },
+                    {
+                        id: 'D005', name: 'Paolo Romano', badge: 'PR4231', status: 'active',
+                        currentTrain: 'FR 8841', route: 'Venezia Mestre - Roma Termini',
+                        hoursWorked: 7.3, maxHours: 9, location: 'Bologna Centrale',
+                        nextBreak: '15:20', qualifications: ['Frecciarossa'],
+                        efficiency: 90, yearsService: 6
+                    },
+                    {
+                        id: 'D006', name: 'Francesca Costa', badge: 'FC3345', status: 'available',
+                        currentTrain: null, route: null, hoursWorked: 1.5, maxHours: 9,
+                        location: 'Stazione Roma', nextBreak: 'Disponibile',
+                        qualifications: ['Frecciarossa', 'Intercity'],
+                        efficiency: 94, yearsService: 4
+                    }
+                ];
+
+                // Sample trains data
+                this.trains = [
+                    { number: 'FR 9512', type: 'Frecciarossa', route: 'Roma Termini - Milano Centrale', 
+                      departure: '14:30', status: 'on_time', platform: '7', needsDriver: false },
+                    { number: 'IC 567', type: 'Intercity', route: 'Napoli Centrale - Torino PN', 
+                      departure: '15:45', status: 'delayed', platform: '12', needsDriver: false },
+                    { number: 'FR 8841', type: 'Frecciarossa', route: 'Venezia Mestre - Roma Termini', 
+                      departure: '16:20', status: 'on_time', platform: '5', needsDriver: false },
+                    { number: 'REG 2341', type: 'Regionale', route: 'Firenze SMN - Bologna Centrale', 
+                      departure: '17:30', status: 'on_time', platform: '3', needsDriver: true },
+                    { number: 'FR 7215', type: 'Frecciarossa', route: 'Milano Centrale - Napoli Centrale', 
+                      departure: '18:15', status: 'on_time', platform: '9', needsDriver: true },
+                    { number: 'IC 892', type: 'Intercity', route: 'Genova - Roma Termini', 
+                      departure: '19:30', status: 'on_time', platform: '4', needsDriver: false },
+                    { number: 'REG 1567', type: 'Regionale', route: 'Torino PN - Milano Centrale', 
+                      departure: '20:15', status: 'on_time', platform: '11', needsDriver: true }
+                ];
+
+                // Sample reserves data
+                this.reserves = [
+                    // ANCONA
+                    { sede: "AN", codice: "AV1C890", inizio: "23:00", fine: "?", tipo: "ETR500/ETR700", riposo: "No", note: "Abilitazione ETR500/ETR700" },
+                    { sede: "AN", codice: "AV1C890", inizio: "06:00", fine: "?", tipo: "ETR500/ETR700", riposo: "Si", note: "Abilitazione ETR500/ETR700" },
+                    
+                    // BARI
+                    { sede: "BA", codice: "AV1A821", inizio: "04:00", fine: "10:00", tipo: "G2000", riposo: "Si", note: "Abilitazione G2000" },
+                    
+                    // BOLOGNA
+                    { sede: "BO", codice: "AV1B806", inizio: "05:30", fine: "14:30", tipo: "ETR500", riposo: "No", note: "ETR500" },
+                    { sede: "BO", codice: "AV1B808", inizio: "05:30", fine: "14:30", tipo: "ETR500", riposo: "No", note: "ETR500" },
+                    
+                    // ROMA
+                    { sede: "RM", codice: "AV1R801", inizio: "05:00", fine: "13:00", tipo: "ETR500", riposo: "No", note: "ETR500" },
+                    { sede: "RM", codice: "AV1R802", inizio: "05:00", fine: "13:00", tipo: "ETR500", riposo: "No", note: "ETR500" },
+                    
+                    // TORINO
+                    { sede: "TO", codice: "AV1T801", inizio: "05:00", fine: "13:00", tipo: "ETR500", riposo: "No", note: "ETR500" },
+                    { sede: "TO", codice: "AV1T821", inizio: "05:00", fine: "13:00", tipo: "G2000", riposo: "No", note: "G2000" }
+                ];
+
+                // Populate delayed train select
+                const delayedTrainSelect = document.getElementById('delayedTrain');
+                delayedTrainSelect.innerHTML = '<option value="">Seleziona treno...</option>' +
+                    this.trains.map(train => 
+                        `<option value="${train.number}">${train.number} - ${train.route}</option>`
+                    ).join('');
+
+                this.filteredDrivers = [...this.drivers];
+                this.filteredTrains = [...this.trains];
+                this.updateDashboard();
+                this.updateReservesView();
+            }
+
+            static switchView(viewName) {
+                document.querySelectorAll('.vt-nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.target.classList.add('active');
+
+                document.querySelectorAll('.vt-view').forEach(view => {
+                    view.classList.remove('active');
+                });
+
+                document.getElementById(viewName).classList.add('active');
+                this.currentView = viewName;
+
+                if (viewName === 'cambio-macchinisti') {
+                    this.updateSwitchDriversView();
+                } else if (viewName === 'riserve') {
+                    this.updateReservesView();
+                } else if (viewName === 'ritardi') {
+                    this.updateDelaysView();
+                } else if (viewName === 'report') {
+                    this.updateReportView();
+                }
+            }
+
+            static updateDashboard() {
+                this.updateStatistics();
+                this.updateDriversGrid();
+                this.updateAlerts();
+                this.updateNextTrains();
+            }
+
+            static updateStatistics() {
+                const totalDrivers = this.drivers.length;
+                const activeDrivers = this.drivers.filter(d => d.status === 'active').length;
+                const availableDrivers = this.drivers.filter(d => d.status === 'available').length;
+                const restingDrivers = this.drivers.filter(d => d.status === 'resting').length;
+
+                document.getElementById('totalDrivers').textContent = totalDrivers;
+                document.getElementById('activeDrivers').textContent = activeDrivers;
+                document.getElementById('availableDrivers').textContent = availableDrivers;
+                document.getElementById('restingDrivers').textContent = restingDrivers;
+            }
+
+            static updateDriversGrid() {
+                const container = document.getElementById('driversGrid');
+                
+                container.innerHTML = this.filteredDrivers.map(driver => {
+                    const progressPercent = (driver.hoursWorked / driver.maxHours) * 100;
+                    const progressClass = progressPercent >= 80 ? 'danger' : progressPercent >= 60 ? 'warning' : '';
+                    
+                    return `
+                    <div class="vt-driver-card ${driver.status}">
+                        <div class="vt-driver-header">
+                            <div class="vt-driver-name">${driver.name}</div>
+                            <div class="vt-driver-badge vt-badge-${driver.status}">
+                                ${driver.status === 'active' ? 'IN SERVIZIO' : 
+                                  driver.status === 'resting' ? 'IN PAUSA' : 'DISPONIBILE'}
+                            </div>
+                        </div>
+                        
+                        <div class="vt-driver-info">
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Matricola</div>
+                                <div class="vt-info-value">${driver.badge}</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Anni Servizio</div>
+                                <div class="vt-info-value">${driver.yearsService} anni</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Ore Lavorate</div>
+                                <div class="vt-info-value">${driver.hoursWorked.toFixed(1)}h / ${driver.maxHours}h</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Efficienza</div>
+                                <div class="vt-info-value">${driver.efficiency}%</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Posizione</div>
+                                <div class="vt-info-value">${driver.location}</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Prossima Pausa</div>
+                                <div class="vt-info-value">${driver.nextBreak}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="vt-progress-bar">
+                            <div class="vt-progress-fill ${progressClass}" style="width: ${progressPercent}%"></div>
+                        </div>
+                        
+                        ${driver.currentTrain ? `
+                            <div class="vt-driver-train">
+                                <div class="vt-train-number">${driver.currentTrain}</div>
+                                <div class="vt-train-route">${driver.route}</div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="vt-driver-actions">
+                            ${driver.status === 'available' ? `
+                                <button class="vt-button primary" onclick="IntegratedSystem.assignTrain('${driver.id}')">
+                                    <i class="fas fa-train"></i>Assegna Treno
+                                </button>
+                                <button class="vt-button gold" onclick="IntegratedSystem.prepareSwitch('${driver.id}')">
+                                    <i class="fas fa-sync-alt"></i>Prepara Cambio
+                                </button>
+                            ` : ''}
+                            
+                            ${driver.status === 'active' ? `
+                                <button class="vt-button warning" onclick="IntegratedSystem.startBreak('${driver.id}')">
+                                    <i class="fas fa-coffee"></i>Pausa
+                                </button>
+                                <button class="vt-button danger" onclick="IntegratedSystem.endShift('${driver.id}')">
+                                    <i class="fas fa-flag-checkered"></i>Fine Turno
+                                </button>
+                            ` : ''}
+                            
+                            ${driver.status === 'resting' ? `
+                                <button class="vt-button primary" onclick="IntegratedSystem.endBreak('${driver.id}')">
+                                    <i class="fas fa-play"></i>Riprendi
+                                </button>
+                            ` : ''}
+                            
+                            <button class="vt-button" style="background: var(--vt-dark-gray); color: white;" 
+                                    onclick="IntegratedSystem.showDriverDetails('${driver.id}')">
+                                <i class="fas fa-info"></i>Dettagli
+                            </button>
+                        </div>
+                    </div>
+                `}).join('');
+            }
+
+            static updateAlerts() {
+                const container = document.getElementById('alertsList');
+                const alerts = [];
+                
+                // Check for drivers approaching max hours
+                this.drivers.forEach(driver => {
+                    if (driver.hoursWorked >= driver.maxHours - 0.5) {
+                        alerts.push({
+                            type: 'critical',
+                            message: `${driver.name} raggiungerà limite ore tra ${(driver.maxHours - driver.hoursWorked).toFixed(1)}h`
+                        });
+                    } else if (driver.hoursWorked >= driver.maxHours - 1) {
+                        alerts.push({
+                            type: 'warning',
+                            message: `${driver.name} vicino al limite ore (${driver.hoursWorked.toFixed(1)}h)`
+                        });
+                    }
+                });
+                
+                // Check for trains needing drivers
+                const trainsNeedingDrivers = this.trains.filter(t => t.needsDriver);
+                if (trainsNeedingDrivers.length > 0) {
+                    alerts.push({
+                        type: 'warning',
+                        message: `${trainsNeedingDrivers.length} treni in attesa di macchinista`
+                    });
+                }
+                
+                // Check for available drivers
+                const availableCount = this.drivers.filter(d => d.status === 'available').length;
+                if (availableCount === 0) {
+                    alerts.push({
+                        type: 'critical',
+                        message: 'Nessun macchinista disponibile - Attivare emergenza'
+                    });
+                } else if (availableCount <= 2) {
+                    alerts.push({
+                        type: 'warning',
+                        message: `Solo ${availableCount} macchinisti disponibili`
+                    });
+                }
+                
+                container.innerHTML = alerts.map(alert => `
+                    <div class="vt-alert-item ${alert.type}">
+                        <i class="fas fa-exclamation-circle"></i>
+                        ${alert.message}
+                    </div>
+                `).join('');
+            }
+
+            static updateNextTrains() {
+                const container = document.getElementById('nextTrains');
+                const nextTrains = this.filteredTrains.slice(0, 4);
+                
+                container.innerHTML = nextTrains.map(train => {
+                    let typeClass = 'info';
+                    if (train.needsDriver) typeClass = 'critical';
+                    else if (train.status === 'delayed') typeClass = 'warning';
+                    
+                    return `
+                    <div class="vt-alert-item ${typeClass}">
+                        <i class="fas fa-train"></i>
+                        <div>
+                            <strong>${train.number}</strong> - ${train.route}
+                            <div style="font-size: 11px; margin-top: 2px;">
+                                Partenza: ${train.departure} - Binario: ${train.platform}
+                                ${train.needsDriver ? ' - ⚠️ CERCA MACCHINISTA' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+            }
+
+            static updateSwitchDriversView() {
+                const container = document.getElementById('switchDriversGrid');
+                const activeDrivers = this.drivers.filter(d => d.status === 'active');
+                
+                container.innerHTML = activeDrivers.map(driver => `
+                    <div class="vt-driver-card active">
+                        <div class="vt-driver-header">
+                            <div class="vt-driver-name">${driver.name}</div>
+                            <div class="vt-driver-badge vt-badge-active">IN SERVIZIO</div>
+                        </div>
+                        
+                        <div class="vt-driver-info">
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Treno Attuale</div>
+                                <div class="vt-info-value">${driver.currentTrain}</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Percorso</div>
+                                <div class="vt-info-value">${driver.route}</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Ore Lavorate</div>
+                                <div class="vt-info-value">${driver.hoursWorked.toFixed(1)}h</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Posizione</div>
+                                <div class="vt-info-value">${driver.location}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="vt-driver-actions">
+                            <button class="vt-button gold" onclick="IntegratedSystem.initiateSwitch('${driver.id}')">
+                                <i class="fas fa-sync-alt"></i>Cambia Macchinista
+                            </button>
+                            <button class="vt-button warning" onclick="IntegratedSystem.suggestReplacement('${driver.id}')">
+                                <i class="fas fa-user-friends"></i>Suggerisci Sostituto
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            static updateReservesView() {
+                this.applyReserveFilters();
+            }
+
+            static updateReservesStats(filteredData) {
+                const totalReserves = document.getElementById('total-reserves');
+                const activeNow = document.getElementById('active-now');
+                const withRest = document.getElementById('with-rest');
+                const locationsCount = document.getElementById('locations-count');
+                
+                totalReserves.textContent = filteredData.length;
+                
+                // Calcola riserve attive ora
+                const now = new Date();
+                const currentTime = now.getHours() * 100 + now.getMinutes();
+                
+                const activeReserves = filteredData.filter(reserve => {
+                    const startTime = parseInt(reserve.inizio.replace(':', ''));
+                    const endTime = reserve.fine === '?' ? 2400 : parseInt(reserve.fine.replace(':', ''));
+                    return startTime <= currentTime && currentTime <= endTime;
+                });
+                
+                activeNow.textContent = activeReserves.length;
+                
+                // Calcola riserve con riposo
+                const withRestCount = filteredData.filter(reserve => reserve.riposo === 'Si').length;
+                withRest.textContent = withRestCount;
+                
+                // Calcola sedi attive
+                const uniqueLocations = new Set(filteredData.map(reserve => reserve.sede));
+                locationsCount.textContent = uniqueLocations.size;
+            }
+
+            static populateReservesTable(data) {
+                const tableBody = document.getElementById('reserves-body');
+                tableBody.innerHTML = '';
+                
+                data.forEach(reserve => {
+                    const row = document.createElement('tr');
+                    
+                    // Determina la classe per il badge della sede
+                    const badgeClass = `badge-${reserve.sede.toLowerCase()}`;
+                    
+                    row.innerHTML = `
+                        <td><span class="location-badge ${badgeClass}">${reserve.sede}</span></td>
+                        <td>${reserve.codice}</td>
+                        <td class="time-cell">${reserve.inizio}</td>
+                        <td class="time-cell">${reserve.fine}</td>
+                        <td><span class="train-type">${reserve.tipo}</span></td>
+                        <td class="${reserve.riposo === 'Si' ? 'rest-yes' : 'rest-no'}">${reserve.riposo}</td>
+                        <td>${reserve.note}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                this.updateReservesStats(data);
+            }
+
+            static applyReserveFilters() {
+                const locationFilter = document.getElementById('location-filter').value;
+                const trainFilter = document.getElementById('train-filter').value;
+                const timeFilter = document.getElementById('time-filter').value;
+                const restFilter = document.getElementById('rest-filter').value;
+                
+                let filteredData = this.reserves;
+                
+                // Filtro per sede
+                if (locationFilter !== 'all') {
+                    filteredData = filteredData.filter(reserve => reserve.sede === locationFilter);
+                }
+                
+                // Filtro per tipo treno
+                if (trainFilter !== 'all') {
+                    filteredData = filteredData.filter(reserve => 
+                        reserve.tipo.toLowerCase().includes(trainFilter.toLowerCase())
+                    );
+                }
+                
+                // Filtro per orario
+                if (timeFilter !== 'all') {
+                    filteredData = filteredData.filter(reserve => {
+                        const startHour = parseInt(reserve.inizio.split(':')[0]);
+                        
+                        switch(timeFilter) {
+                            case 'morning':
+                                return startHour >= 5 && startHour < 12;
+                            case 'afternoon':
+                                return startHour >= 12 && startHour < 18;
+                            case 'evening':
+                                return startHour >= 18 && startHour < 24;
+                            case 'night':
+                                return startHour >= 0 && startHour < 5;
+                            default:
+                                return true;
+                        }
+                    });
+                }
+                
+                // Filtro per riposo
+                if (restFilter !== 'all') {
+                    filteredData = filteredData.filter(reserve => reserve.riposo === restFilter);
+                }
+                
+                this.populateReservesTable(filteredData);
+            }
+
+            static updateDelaysView() {
+                // Inizializza la vista ritardi
+            }
+
+            static findSolutions() {
+                const delayedTrain = document.getElementById('delayedTrain').value;
+                const delayMinutes = parseInt(document.getElementById('delayMinutes').value);
+                const currentStation = document.getElementById('currentStation').value;
+                
+                if (!delayedTrain || !delayMinutes) {
+                    this.showNotification('Seleziona treno e inserisci minuti di ritardo', 'error');
+                    return;
+                }
+                
+                const solutionsGrid = document.getElementById('solutionsGrid');
+                solutionsGrid.innerHTML = '';
+                
+                // Simula la ricerca di soluzioni
+                this.showNotification(`Ricerca soluzioni per ${delayedTrain} in ritardo di ${delayMinutes} minuti...`, 'info');
+                
+                setTimeout(() => {
+                    // Soluzioni simulate
+                    const solutions = [
+                        {
+                            type: 'recommended',
+                            title: 'Cambio Macchinista',
+                            description: `Assegnare macchinista di riserva per proseguire il servizio da ${currentStation}`,
+                            impact: 'Ritardo ridotto a 15 minuti',
+                            resources: '1 macchinista disponibile a Roma'
+                        },
+                        {
+                            type: 'alternative',
+                            title: 'Accorpamento Servizi',
+                            description: `Accorpare il treno ${delayedTrain} con il servizio successivo sulla stessa tratta`,
+                            impact: 'Ritardo ridotto a 30 minuti',
+                            resources: 'Nessuna risorsa aggiuntiva richiesta'
+                        },
+                        {
+                            type: 'alternative',
+                            title: 'Utilizzo Riserva Locale',
+                            description: `Attivare riserva locale presso ${currentStation} per cambio immediato`,
+                            impact: 'Ritardo ridotto a 20 minuti',
+                            resources: 'Riserva locale disponibile'
+                        }
+                    ];
+                    
+                    solutionsGrid.innerHTML = solutions.map(solution => `
+                        <div class="solution-card ${solution.type === 'recommended' ? 'recommended' : 'warning'}">
+                            <div class="solution-header">
+                                <div class="solution-title">${solution.title}</div>
+                                <div class="solution-badge badge-${solution.type}">
+                                    ${solution.type === 'recommended' ? 'RACCOMANDATA' : 'ALTERNATIVA'}
+                                </div>
+                            </div>
+                            <div class="solution-details">${solution.description}</div>
+                            <div class="solution-impact">
+                                <span><i class="fas fa-clock"></i> ${solution.impact}</span>
+                                <span><i class="fas fa-users"></i> ${solution.resources}</span>
+                            </div>
+                            <button class="vt-button ${solution.type === 'recommended' ? 'success' : 'warning'}" 
+                                    onclick="IntegratedSystem.applySolution('${solution.title}')">
+                                <i class="fas fa-check"></i> Applica Soluzione
+                            </button>
+                        </div>
+                    `).join('');
+                    
+                    this.showNotification(`Trovate ${solutions.length} soluzioni per il ritardo`, 'success');
+                }, 1500);
+            }
+
+            static applySolution(solutionTitle) {
+                this.showNotification(`Soluzione "${solutionTitle}" applicata con successo`, 'success');
+                // Qui si implementerebbe la logica per applicare effettivamente la soluzione
+            }
+
+            static updateReportView() {
+                const container = document.getElementById('reportGrid');
+                
+                const totalHours = this.drivers.reduce((sum, d) => sum + d.hoursWorked, 0);
+                const avgEfficiency = Math.round(this.drivers.reduce((sum, d) => sum + d.efficiency, 0) / this.drivers.length);
+                
+                container.innerHTML = `
+                    <div class="vt-driver-card">
+                        <div class="vt-driver-header">
+                            <div class="vt-driver-name">Report Sistema</div>
+                            <div class="vt-driver-badge vt-badge-active">LIVE</div>
+                        </div>
+                        <div class="vt-driver-info">
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Ore Totali Lavorate</div>
+                                <div class="vt-info-value">${totalHours.toFixed(1)}h</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Efficienza Media</div>
+                                <div class="vt-info-value">${avgEfficiency}%</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Treni Gestiti</div>
+                                <div class="vt-info-value">${this.trains.length}</div>
+                            </div>
+                            <div class="vt-info-item">
+                                <div class="vt-info-label">Riserve Attive</div>
+                                <div class="vt-info-value">${this.reserves.length}</div>
+                            </div>
+                        </div>
+                        <div class="vt-driver-actions">
+                            <button class="vt-button primary" onclick="IntegratedSystem.generateReport()">
+                                <i class="fas fa-chart-bar"></i>Genera Report
+                            </button>
+                            <button class="vt-button warning" onclick="IntegratedSystem.exportData()">
+                                <i class="fas fa-download"></i>Esporta Dati
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Altri metodi del sistema (searchTrain, autoAssignAll, etc.)
+            static searchTrain() {
+                const trainNumber = document.getElementById('trainNumber').value;
+                
+                if (!trainNumber) {
+                    this.showNotification('Inserire il numero del treno', 'error');
+                    return;
+                }
+                
+                this.showNotification(`Ricerca treno ${trainNumber} in corso...`, 'info');
+                
+                // Simulate API call
+                setTimeout(() => {
+                    const train = this.trains.find(t => t.number.includes(trainNumber));
+                    if (train) {
+                        if (train.needsDriver) {
+                            this.showNotification(`Treno ${train.number} trovato - CERCA MACCHINISTA URGENTE!`, 'error');
+                            this.autoAssignToTrain(train);
+                        } else {
+                            this.showNotification(`Treno ${train.number} trovato - Macchinista già assegnato`, 'success');
+                        }
+                    } else {
+                        this.showNotification(`Treno ${trainNumber} non trovato`, 'warning');
+                    }
+                }, 1500);
+            }
+
+            static autoAssignAll() {
+                const availableDrivers = this.drivers.filter(d => d.status === 'available');
+                const trainsNeedingDrivers = this.trains.filter(t => t.needsDriver);
+                
+                if (availableDrivers.length === 0) {
+                    this.showNotification('Nessun macchinista disponibile', 'warning');
+                    return;
+                }
+                
+                if (trainsNeedingDrivers.length === 0) {
+                    this.showNotification('Tutti i treni hanno macchinista assegnato', 'info');
+                    return;
+                }
+                
+                let assignedCount = 0;
+                availableDrivers.forEach((driver, index) => {
+                    if (trainsNeedingDrivers[index]) {
+                        this.assignDriverToTrain(driver.id, trainsNeedingDrivers[index]);
+                        assignedCount++;
+                    }
+                });
+                
+                this.showNotification(`Assegnazione automatica completata: ${assignedCount} treni assegnati`, 'success');
+                this.updateDashboard();
+            }
+
+            static assignDriverToTrain(driverId, train) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                if (driver && driver.status === 'available') {
+                    driver.status = 'active';
+                    driver.currentTrain = train.number;
+                    driver.route = train.route;
+                    driver.location = train.route.split(' - ')[0];
+                    train.needsDriver = false;
+                    
+                    this.showNotification(`✅ ${driver.name} assegnato a ${train.number}`, 'success');
+                }
+            }
+
+            static autoAssignToTrain(train) {
+                const availableDriver = this.drivers.find(d => d.status === 'available');
+                if (availableDriver) {
+                    this.assignDriverToTrain(availableDriver.id, train);
+                    this.updateDashboard();
+                } else {
+                    this.showNotification(`❌ Nessun macchinista disponibile per ${train.number} - ATTIVARE EMERGENZA`, 'error', 8000);
+                }
+            }
+
+            static selectTrainType(type) {
+                this.selectedTrainType = type;
+                
+                // Update button states
+                document.querySelectorAll('.vt-train-type-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // Filter trains based on selection
+                if (type === 'all') {
+                    this.filteredTrains = [...this.trains];
+                } else {
+                    this.filteredTrains = this.trains.filter(train => {
+                        if (type === 'fr') return train.type === 'Frecciarossa';
+                        if (type === 'ic') return train.type === 'Intercity';
+                        if (type === 'reg') return train.type === 'Regionale';
+                        return true;
+                    });
+                }
+                
+                this.updateNextTrains();
+                this.showNotification(`Filtro treni: ${this.getTrainTypeLabel(type)}`, 'info');
+            }
+
+            static getTrainTypeLabel(type) {
+                switch(type) {
+                    case 'all': return 'Tutti i treni';
+                    case 'fr': return 'Frecciarossa';
+                    case 'ic': return 'Intercity';
+                    case 'reg': return 'Regionale';
+                    default: return 'Tutti i treni';
+                }
+            }
+
+            static startAutoRefresh() {
+                // Aggiornamento automatico ogni 10 secondi
+                this.autoRefreshInterval = setInterval(() => {
+                    this.autoRefresh();
+                }, 10000);
+            }
+
+            static autoRefresh() {
+                // Simulate real-time updates
+                this.drivers.forEach(driver => {
+                    if (driver.status === 'active') {
+                        // Increment hours worked
+                        driver.hoursWorked = Math.min(driver.hoursWorked + 0.03, driver.maxHours);
+                        
+                        // Random events
+                        if (Math.random() < 0.1) { // 10% chance
+                            driver.location = this.getNextStation(driver.route, driver.location);
+                        }
+                        
+                        if (Math.random() < 0.05) { // 5% chance of efficiency change
+                            driver.efficiency = Math.max(80, Math.min(99, driver.efficiency + (Math.random() - 0.5) * 2));
+                        }
+                    }
+                });
+                
+                // Random train status changes
+                this.trains.forEach(train => {
+                    if (Math.random() < 0.08) { // 8% chance
+                        train.status = Math.random() < 0.3 ? 'delayed' : 'on_time';
+                    }
+                });
+                
+                this.updateDashboard();
+                
+                // Show occasional live updates
+                if (Math.random() < 0.2) {
+                    const activeDrivers = this.drivers.filter(d => d.status === 'active');
+                    if (activeDrivers.length > 0) {
+                        const randomDriver = activeDrivers[Math.floor(Math.random() * activeDrivers.length)];
+                        this.showNotification(`📍 ${randomDriver.name} arrivato a ${randomDriver.location}`, 'info', 3000);
+                    }
+                }
+            }
+
+            static getNextStation(route, currentLocation) {
+                const stations = route.split(' - ');
+                const currentIndex = stations.indexOf(currentLocation);
+                return currentIndex < stations.length - 1 ? stations[currentIndex + 1] : stations[0];
+            }
+
+            static updateCurrentTime() {
+                const now = new Date();
+                document.getElementById('currentTime').textContent = 
+                    now.toLocaleTimeString('it-IT');
+            }
+
+            static showNotification(message, type = 'info', duration = 5000) {
+                const notification = document.getElementById('vtNotification');
+                notification.textContent = message;
+                notification.className = `vt-notification ${type} show`;
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, duration);
+            }
+
+            // Metodi placeholder per le funzionalità non completamente implementate
+            static assignTrain(driverId) {
+                const unassignedTrains = this.trains.filter(t => t.needsDriver);
+                
+                if (unassignedTrains.length > 0) {
+                    const train = unassignedTrains[0];
+                    this.assignDriverToTrain(driverId, train);
+                    this.updateDashboard();
+                } else {
+                    this.showNotification('Nessun treno disponibile per assegnazione', 'info');
+                }
+            }
+
+            static prepareSwitch(driverId) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                if (driver) {
+                    this.showNotification(`Macchinista ${driver.name} pronto per cambio treno`, 'info');
+                }
+            }
+
+            static initiateSwitch(driverId) {
+                // Placeholder per l'inizializzazione del cambio
+                this.showNotification(`Inizializzazione cambio per macchinista ${driverId}`, 'info');
+            }
+
+            static suggestReplacement(driverId) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                const availableDrivers = this.drivers.filter(d => d.status === 'available');
+                
+                if (availableDrivers.length > 0) {
+                    const suggestions = availableDrivers.slice(0, 2).map(d => d.name).join(', ');
+                    this.showNotification(`Sostituti suggeriti per ${driver.name}: ${suggestions}`, 'info');
+                } else {
+                    this.showNotification('Nessun sostituto disponibile per il momento', 'warning');
+                }
+            }
+
+            static startBreak(driverId) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                if (driver) {
+                    driver.status = 'resting';
+                    driver.currentTrain = null;
+                    driver.route = null;
+                    this.showNotification(`⏸️ ${driver.name} in pausa`, 'info');
+                    this.updateDashboard();
+                }
+            }
+
+            static endBreak(driverId) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                if (driver) {
+                    driver.status = 'available';
+                    this.showNotification(`▶️ ${driver.name} disponibile`, 'success');
+                    this.updateDashboard();
+                }
+            }
+
+            static endShift(driverId) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                if (driver) {
+                    driver.status = 'available';
+                    driver.currentTrain = null;
+                    driver.route = null;
+                    driver.hoursWorked = 0;
+                    this.showNotification(`🏁 Turno di ${driver.name} completato`, 'success');
+                    this.updateDashboard();
+                }
+            }
+
+            static showDriverDetails(driverId) {
+                const driver = this.drivers.find(d => d.id === driverId);
+                if (driver) {
+                    const details = `
+Macchinista: ${driver.name}
+Matricola: ${driver.badge}
+Stato: ${driver.status.toUpperCase()}
+Anni di servizio: ${driver.yearsService}
+Efficienza: ${driver.efficiency}%
+Qualifiche: ${driver.qualifications.join(', ')}
+Ore lavorate: ${driver.hoursWorked.toFixed(1)}h / ${driver.maxHours}h
+Posizione: ${driver.location}
+${driver.currentTrain ? `Treno attuale: ${driver.currentTrain}` : 'Disponibile per assegnazione'}
+Prossima pausa: ${driver.nextBreak}
+                    `;
+                    this.showNotification(`📋 Dettagli ${driver.name}:\n${details}`, 'info', 10000);
+                }
+            }
+
+            static switchDrivers() {
+                this.switchView('cambio-macchinisti');
+                this.showNotification('Modalità cambio macchinisti attivata', 'info');
+            }
+
+            static emergencyProtocol() {
+                if (confirm('ATTIVARE PROTOCOLLO EMERGENZA MACCHINISTI?\n\nTutti i macchinisti disponibili verranno messi in servizio immediatamente.')) {
+                    // Make all available drivers active and assign to trains
+                    let emergencyCount = 0;
+                    this.drivers.forEach(driver => {
+                        if (driver.status === 'available') {
+                            driver.status = 'active';
+                            emergencyCount++;
+                            
+                            // Find a train that needs driver
+                            const trainNeedingDriver = this.trains.find(t => t.needsDriver);
+                            if (trainNeedingDriver) {
+                                this.assignDriverToTrain(driver.id, trainNeedingDriver);
+                            }
+                        }
+                    });
+                    
+                    this.showNotification(`🚨 PROTOCOLLO EMERGENZA ATTIVATO - ${emergencyCount} macchinisti in servizio immediato`, 'error', 15000);
+                    this.updateDashboard();
+                }
+            }
+
+            static filterByStatus(status) {
+                this.filteredDrivers = status ? this.drivers.filter(d => d.status === status) : [...this.drivers];
+                this.updateDriversGrid();
+                this.showNotification(`Visualizzazione: ${this.filteredDrivers.length} macchinisti ${status || 'totali'}`, 'info');
+            }
+
+            static showAllDrivers() {
+                this.filteredDrivers = [...this.drivers];
+                this.updateDriversGrid();
+                this.showNotification('Visualizzazione di tutti i macchinisti', 'info');
+            }
+
+            static showShiftModal() {
+                this.showNotification('Apertura modal turni - Funzionalità in sviluppo', 'info');
+            }
+
+            static generateReport() {
+                const report = {
+                    timestamp: new Date().toLocaleString(),
+                    totalDrivers: this.drivers.length,
+                    activeDrivers: this.drivers.filter(d => d.status === 'active').length,
+                    availableDrivers: this.drivers.filter(d => d.status === 'available').length,
+                    restingDrivers: this.drivers.filter(d => d.status === 'resting').length,
+                    trainsNeedingDrivers: this.trains.filter(t => t.needsDriver).length,
+                    reservesCount: this.reserves.length,
+                    averageEfficiency: Math.round(this.drivers.reduce((sum, d) => sum + d.efficiency, 0) / this.drivers.length),
+                };
+                
+                console.log('📊 Report Sistema Integrato:', report);
+                this.showNotification('📊 Report generato nella console del browser', 'success');
+            }
+
+            static exportData() {
+                this.showNotification('Esportazione dati in corso...', 'info');
+                setTimeout(() => {
+                    this.showNotification('Dati esportati con successo', 'success');
+                }, 1500);
+            }
+        }
+
+        // Inizializzazione
+        document.addEventListener('DOMContentLoaded', function() {
+            IntegratedSystem.initialize();
+            
+            // Aggiungi event listeners per i filtri delle riserve
+            document.getElementById('location-filter').addEventListener('change', () => IntegratedSystem.applyReserveFilters());
+            document.getElementById('train-filter').addEventListener('change', () => IntegratedSystem.applyReserveFilters());
+            document.getElementById('time-filter').addEventListener('change', () => IntegratedSystem.applyReserveFilters());
+            document.getElementById('rest-filter').addEventListener('change', () => IntegratedSystem.applyReserveFilters());
+            
+            document.getElementById('reset-filters').addEventListener('click', function() {
+                document.getElementById('location-filter').value = 'all';
+                document.getElementById('train-filter').value = 'all';
+                document.getElementById('time-filter').value = 'all';
+                document.getElementById('rest-filter').value = 'all';
+                IntegratedSystem.applyReserveFilters();
+            });
+        });
+    </script>
+</body>
+</html>
